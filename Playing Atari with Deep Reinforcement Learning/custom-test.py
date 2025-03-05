@@ -2,7 +2,7 @@ import pygame
 import numpy as np
 
 class PongEnvironment:
-    def __init__(self, width=336, height=336, max_score=10):
+    def __init__(self, width=400, height=300, max_score=10):
         pygame.init()
         self.width = width
         self.height = height
@@ -109,3 +109,20 @@ class PongEnvironment:
 
         pygame.display.flip()
         self.clock.tick(30)
+
+
+if __name__ == "__main__":
+    env = PongEnvironment(max_score=5)
+
+    running = True
+    done = False
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        _, reward, done = env.apply(mode='human')
+
+        if done:
+            print("Game Over!")
+            env.reset()  # Reset for new game
