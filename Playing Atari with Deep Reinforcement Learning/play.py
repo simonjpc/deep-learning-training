@@ -11,7 +11,7 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 running = False
 
-        _, reward, done = env.apply(mode='human')
+        _, reward, done = env.apply(mode='human', render_flag=True)
 
         if done:
             print("Game Over!")
