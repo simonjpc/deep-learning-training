@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     M = buffer_size * 100
     epsilon = EPSILON_START
-    env = PongEnvironment(max_score=3)
+    env = PongEnvironment(max_score=20)
     for episode in range(M):
 
         epsilon = max(EPSILON_END, round(EPSILON_START - ((episode / M) * 0.9 / (3*EPSILON_END)), 2))
