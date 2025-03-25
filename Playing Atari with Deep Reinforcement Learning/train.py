@@ -86,7 +86,7 @@ if __name__ == "__main__":
             states_input = concat_states(states_input, state_p)
 
         q_network.batch_size = 1
-        if episode == 0 or not episode % 4:
+        if episode == 0 or not episode % 3:
             _ = q_network.forward(states_input.unsqueeze(0).to(device))
             action = q_network.action_selection(epsilon=epsilon).item()
         state_p, reward, done = env.apply(action=action, render_flag=True)
