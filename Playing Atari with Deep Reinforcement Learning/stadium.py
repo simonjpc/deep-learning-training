@@ -3,16 +3,17 @@ import pygame
 import numpy as np
 
 class PongEnvironment:
-    def __init__(self, width=84, height=84, max_score=20):
+    def __init__(self, width=84, height=84+20, max_score=20):
         pygame.init()
         self.width = width
         self.height = height
         self.max_score = max_score
+        self.score_height = 20
         self.screen = pygame.display.set_mode((width, height))
         self.clock = pygame.time.Clock()
         self.ball_speed_val = 1.2
-        self.pads_speed_val = 3
-        self.pads_speed_val_agent = 6
+        self.pads_speed_val = 1
+        self.pads_speed_val_agent = 5 # for AI agent paddle speed = 5. For human paddle speed = 1
         self.reset()
 
     def reset(self):
@@ -20,9 +21,9 @@ class PongEnvironment:
         if hasattr(self, '_surface_array'):
             del self._surface_array
         
-        self.ball = pygame.Rect(self.width // 2, self.height // 2, 2, 2)
-        self.agent_paddle = pygame.Rect(self.width - 10, self.height // 2 - 30, 4, 8)
-        self.opponent_paddle = pygame.Rect(10, self.height // 2 - 30, 4, 8)
+        self.ball = pygame.Rect(self.width // 2, self.height // 2 + self.score_height, 2, 2)
+        self.agent_paddle = pygame.Rect(self.width - 10, self.height // 2 - 15 + self.score_height, 4, 8)
+        self.opponent_paddle = pygame.Rect(10, self.height // 2 - 15 + self.score_height, 4, 8)
 
         self.ball_speed = [self.ball_speed_val, self.ball_speed_val * 0.9]
         self.agent_score = 0
@@ -39,8 +40,9 @@ class PongEnvironment:
         surface = pygame.surfarray.array3d(pygame.display.get_surface())
         gray = np.dot(surface[..., :3], [0.2989, 0.5870, 0.1140])
         output = np.transpose(gray, (1, 0))
-        desired_mean = (np.max(output) - np.min(output)) // 2 + 1
-        return (output - desired_mean) / (np.max(desired_mean) + 1e-6)
+        game_area = output[self.score_height:, :]
+        desired_mean = (np.max(game_area) - np.min(game_area)) // 2 + 1
+        return (game_area - desired_mean) / (np.max(desired_mean) + 1e-6)
 
     def apply(self, action=None, mode='agent', render_flag=False):
         reward = 0
@@ -56,17 +58,17 @@ class PongEnvironment:
         elif mode == 'human':
             keys = pygame.key.get_pressed()
             if keys[pygame.K_UP]:
-                self.agent_paddle.move_ip(0, -self.pads_speed_val)
+                self.agent_paddle.move_ip(0, -self.pads_speed_val_agent)
             if keys[pygame.K_DOWN]:
-                self.agent_paddle.move_ip(0, self.pads_speed_val)
+                self.agent_paddle.move_ip(0, self.pads_speed_val_agent)
 
-        self.agent_paddle.clamp_ip(pygame.Rect(0, 0, self.width, self.height))
+        self.agent_paddle.clamp_ip(pygame.Rect(0, self.score_height, self.width, self.height - self.score_height))
 
         self.move_opponent_paddle()
         self.ball.move_ip(*self.ball_speed)
 
         # Ball-wall collision
-        if self.ball.top <= 0 or self.ball.bottom >= self.height:
+        if self.ball.top <= self.score_height or self.ball.bottom >= self.height:
             self.ball_speed[1] *= -1
 
         # Handle paddle collisions (deterministic bounce with speed variation near edges)
@@ -115,7 +117,7 @@ class PongEnvironment:
         relative_contact = (self.ball.centery - paddle.top) / paddle.height
 
         # If near edges, increase vertical speed slightly (deterministic "edge boost")
-        edge_threshold = 0.2  # Top 30% and bottom 30% count as edges
+        edge_threshold = 0.2  # Top 20% and bottom 20% count as edges
         speed_boost = 1.4 if relative_contact < edge_threshold or relative_contact > (1 - edge_threshold) else 1.0
 
         # Apply edge boost to vertical speed (keeping direction)
@@ -123,13 +125,13 @@ class PongEnvironment:
         self.ball_speed[0] *= speed_boost
 
         # Limit vertical speed to prevent extreme angles
-        max_horizontal_speed = self.ball_speed_val * 3
-        max_vertical_speed = self.ball_speed_val * 1.4
+        max_horizontal_speed = self.ball_speed_val * 2.1
+        max_vertical_speed = self.ball_speed_val * 1.7
         self.ball_speed[0] = float(np.clip(self.ball_speed[0], -max_horizontal_speed, max_horizontal_speed))
         self.ball_speed[1] = float(np.clip(self.ball_speed[1], -max_vertical_speed, max_vertical_speed))
 
     def ball_reset(self):
-        self.ball = pygame.Rect(self.width // 2, self.height // 2, 2, 2)
+        self.ball = pygame.Rect(self.width // 2, self.height // 2 + self.score_height, 2, 2)
         horizontal_rand = np.random.rand()
         vertical_rand = np.random.rand()
         
@@ -144,7 +146,7 @@ class PongEnvironment:
         elif self.opponent_paddle.centery > self.ball.centery:
             self.opponent_paddle.move_ip(0, -self.pads_speed_val)
 
-        self.opponent_paddle.clamp_ip(pygame.Rect(0, 0, self.width, self.height))
+        self.opponent_paddle.clamp_ip(pygame.Rect(0, self.score_height, self.width, self.height - self.score_height))
 
     def render(self):
         self.screen.fill((0, 0, 0))
@@ -152,14 +154,16 @@ class PongEnvironment:
         pygame.draw.rect(self.screen, (255, 255, 255), self.opponent_paddle)
         pygame.draw.ellipse(self.screen, (255, 255, 255), self.ball)
 
-        font = pygame.font.SysFont(None, 8)
-        agent_text = font.render(f'Agent: {self.agent_score}', True, (255, 255, 255))
-        opponent_text = font.render(f'Opponent: {self.opponent_score}', True, (255, 255, 255))
-        self.screen.blit(agent_text, (self.width - 30, 10))
-        self.screen.blit(opponent_text, (10, 10))
+        font = pygame.font.SysFont(None, self.score_height)
+        agent_text = font.render(f'{self.agent_score}', True, (255, 255, 255))
+        opponent_text = font.render(f'{self.opponent_score}', True, (255, 255, 255))
+        self.screen.blit(agent_text, (self.width - 22, 1))
+        self.screen.blit(opponent_text, (15, 1))
 
+        pygame.draw.line(self.screen, (255, 255, 255), (0, self.score_height), (self.width, self.score_height), 1)
+        
         pygame.display.flip()
-        self.clock.tick(30)
+        self.clock.tick(40)
 
     def stop(self):
         if hasattr(self, '_surface_array'):
