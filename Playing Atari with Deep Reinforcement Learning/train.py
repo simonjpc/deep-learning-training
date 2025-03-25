@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     M = buffer_size * 100
     epsilon = EPSILON_START
-    env = PongEnvironment(max_score=20)
+    env = PongEnvironment(max_score=3)
     for episode in range(M):
 
         epsilon = max(EPSILON_END, round(EPSILON_START - ((episode / M) * 0.9 / (3*EPSILON_END)), 2))
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             states_input = concat_states(states_input, state_p)
 
         q_network.batch_size = 1
-        if episode == 0 or not episode % 4:
+        if episode == 0 or not episode % 3:
             _ = q_network.forward(states_input.unsqueeze(0).to(device))
             action = q_network.action_selection(epsilon=epsilon).item()
         state_p, reward, done = env.apply(action=action, render_flag=True)
