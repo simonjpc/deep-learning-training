@@ -1,7 +1,7 @@
 HYPERPARAMS = {
     "gamma": 0.99,
     "batch_size": 32,
-    "base_path": "Deep Reinforcement Learning with Double Q-learning",
+    "base_path": ".",
     "lr": 0.00025,
     "target_network_update_freq": 6000,
     "episodes": 6000000,
