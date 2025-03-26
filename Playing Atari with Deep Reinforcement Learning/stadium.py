@@ -13,7 +13,7 @@ class PongEnvironment:
         self.clock = pygame.time.Clock()
         self.ball_speed_val = 1.2
         self.pads_speed_val = 1
-        self.pads_speed_val_agent = 5 # for AI agent paddle speed = 5. For human paddle speed = 1
+        self.pads_speed_val_agent = 3 # for AI agent paddle speed = 5. For human paddle speed = 1
         self.reset()
 
     def reset(self):
