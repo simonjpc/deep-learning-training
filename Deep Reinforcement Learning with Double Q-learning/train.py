@@ -1,7 +1,6 @@
 import torch
 from stadium import PongEnvironment
 from config import HYPERPARAMS
-# from torch.utils.tensorboard import SummaryWriter
 from utils import (
     random_state_init,
     build_eval_set,
